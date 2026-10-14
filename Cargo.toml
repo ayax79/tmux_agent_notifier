@@ -1,0 +1,22 @@
+[package]
+name = "tmux-agent-notifier"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Surface coding agent activity (Claude Code, Cursor, Goose) in tmux"
+license = "MIT"
+
+[[bin]]
+name = "tan"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
