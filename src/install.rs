@@ -24,10 +24,12 @@ const CLAUDE_EVENTS: [&str; 6] = [
     "SessionStart",
     "SessionEnd",
 ];
-const CURSOR_EVENTS: [&str; 5] = [
+const CURSOR_EVENTS: [&str; 7] = [
     "beforeSubmitPrompt",
     "stop",
+    "preToolUse",
     "postToolUse",
+    "postToolUseFailure",
     "sessionStart",
     "sessionEnd",
 ];

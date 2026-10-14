@@ -12,6 +12,8 @@ pub const PANE_STATE: &str = "@agent_state";
 pub const PANE_LABEL: &str = "@agent_name";
 pub const PANE_SINCE: &str = "@agent_since";
 pub const PANE_MESSAGE: &str = "@agent_message";
+/// Token of the pane's current approval watcher; older watchers exit.
+pub const PANE_WATCH: &str = "@tan_watch";
 /// Kept separate from `@agent_state` because pane options inherit window options.
 pub const WINDOW_STATE: &str = "@agent_window_state";
 

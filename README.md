@@ -11,7 +11,11 @@ itself (no daemon, no state files):
 |-------------|-------------------------------------------------------|
 | `running`   | you submit a prompt, or a tool finishes               |
 | `waiting`   | the agent ends its turn                               |
-| `attention` | a permission prompt (Claude) or an error (Cursor)     |
+| `attention` | a permission prompt, or an error (Cursor)             |
+
+Cursor has no hook for approval prompts, so on `preToolUse` `tan` starts a
+short-lived background watcher that polls the pane (`capture-pane`) and raises
+`attention` once the "Run this …?" prompt appears.
 
 On entering `waiting`/`attention` while you are *not* looking at the pane,
 `tan` rings the pane's bell (tmux flags the window `!`), sends a desktop

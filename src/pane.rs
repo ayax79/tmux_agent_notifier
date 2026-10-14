@@ -179,9 +179,25 @@ fn window_state(pane: &str, target: Option<State>) -> Result<Option<State>> {
         .max())
 }
 
+/// Whether the user is currently looking at `pane`.
+///
+/// # Errors
+///
+/// Returns an error if tmux cannot be queried.
+pub fn is_focused(pane: &str) -> Result<bool> {
+    Ok(PaneInfo::load(pane)?.is_focused(&tmux::clients()?))
+}
+
 pub fn now() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())
+        .unwrap_or_default()
+}
+
+pub fn now_nanos() -> u128 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
         .unwrap_or_default()
 }

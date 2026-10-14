@@ -42,6 +42,11 @@ impl Agent {
             (Agent::Claude | Agent::Goose, _) => None,
         }
     }
+
+    /// Whether `event` may be followed by an approval prompt that no hook reports.
+    pub fn may_prompt_after(self, event: &str) -> bool {
+        matches!((self, event), (Agent::Cursor, "preToolUse"))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -130,7 +135,9 @@ fn claude(p: &Payload) -> Transition {
 
 fn cursor(p: &Payload) -> Transition {
     match p.event_name() {
-        "beforeSubmitPrompt" | "postToolUse" => set(State::Running, None),
+        "beforeSubmitPrompt" | "preToolUse" | "postToolUse" | "postToolUseFailure" => {
+            set(State::Running, None)
+        }
         "stop" => match p.status.as_deref() {
             Some("aborted") => Transition::Clear,
             Some("error") => set(State::Attention, Some("stopped with an error")),
@@ -215,6 +222,18 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    #[test]
+    fn cursor_pre_tool_use_runs_and_may_prompt() {
+        let t = transition(
+            Agent::Cursor,
+            r#"{"hook_event_name":"preToolUse","tool_name":"Shell"}"#,
+        );
+        assert_eq!(t, set(State::Running, None));
+        assert!(Agent::Cursor.may_prompt_after("preToolUse"));
+        assert!(!Agent::Cursor.may_prompt_after("postToolUse"));
+        assert!(!Agent::Claude.may_prompt_after("preToolUse"));
     }
 
     #[test]

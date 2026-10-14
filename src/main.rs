@@ -1,4 +1,5 @@
 mod agent;
+mod approval;
 mod install;
 mod notify;
 mod pane;
@@ -70,6 +71,16 @@ enum Command {
     },
     /// Remove hooks from agents (all agents when none are given).
     Uninstall { agents: Vec<Agent> },
+    /// Internal: poll a pane for an approval prompt.
+    #[command(hide = true)]
+    WatchApproval {
+        #[arg(long)]
+        pane: String,
+        #[arg(long)]
+        label: String,
+        #[arg(long)]
+        token: String,
+    },
 }
 
 fn main() -> ExitCode {
@@ -102,7 +113,13 @@ fn hook(agent: Agent) {
         println!("{response}");
     }
     let result = event.and_then(|event| match env::var("TMUX_PANE") {
-        Ok(pane) if !pane.is_empty() => pane::apply(&pane, agent.display_name(), &event.transition),
+        Ok(pane) if !pane.is_empty() => {
+            pane::apply(&pane, agent.display_name(), &event.transition)?;
+            if agent.may_prompt_after(&event.name) {
+                approval::spawn(&pane, agent.display_name())?;
+            }
+            Ok(())
+        }
         _ => Ok(()),
     });
     if let Err(err) = result {
@@ -166,5 +183,6 @@ fn run(command: Command) -> Result<()> {
             }
             Ok(())
         }
+        Command::WatchApproval { pane, label, token } => approval::watch(&pane, &label, &token),
     }
 }
