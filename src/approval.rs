@@ -17,7 +17,10 @@ use crate::tmux::{self, PANE_STATE, PANE_WATCH};
 
 const POLL: Duration = Duration::from_millis(1000);
 const MAX_WATCH: Duration = Duration::from_secs(60 * 60);
-const PROMPT_MARKERS: [&str; 2] = ["Skip (esc or n)", "Reject & propose changes"];
+/// Option text that only appears in approval menus. Cursor varies the
+/// wording (e.g. "Skip (esc or n)" vs "Skip & tell the agent what to do
+/// instead (esc or n)"), so match the stable fragments.
+const PROMPT_MARKERS: [&str; 3] = ["(esc or n)", "Run (once) (y)", "Reject & propose changes"];
 const DEFAULT_MESSAGE: &str = "waiting for tool approval";
 
 /// Starts a watcher for `pane`, replacing any previous one.
@@ -113,6 +116,17 @@ mod tests {
     Skip (esc or n)
 "#;
         assert_eq!(prompt(screen).as_deref(), Some("Run this MCP tool?"));
+    }
+
+    #[test]
+    fn detects_cursor_shell_prompt() {
+        let screen = r#"
+ Run this command?
+ Not in allowlist: gh • Not in team allowlist: gh api repos/o/r/contents/.github/workflows --jq '.[].name'
+  → Run (once) (y)
+    Skip & tell the agent what to do instead (esc or n)
+"#;
+        assert_eq!(prompt(screen).as_deref(), Some("Run this command?"));
     }
 
     #[test]
