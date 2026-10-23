@@ -2,6 +2,7 @@
 
 Tells you when a coding agent running in a tmux pane finishes or needs you.
 Works with Claude Code, the Cursor CLI, and Goose via their hook systems.
+The command is `tan`, short for **t**mux-**a**gent-**n**otifier.
 
 Each agent calls `tan hook <agent>` on lifecycle events. `tan` reads the hook
 payload, uses `$TMUX_PANE` to find the pane, and stores the state in tmux
@@ -22,18 +23,41 @@ On entering `waiting`/`attention` while you are *not* looking at the pane,
 notification, and shows a tmux message on other clients. Focusing the pane
 clears it.
 
-## Install (home-manager)
+## Install
+
+Pick one of the methods below, then [configure tmux](#tmux-configuration).
+
+### Nix (FlakeHub)
+
+The flake is published to [FlakeHub](https://flakehub.com/flake/ayax79/tmux_agent_notifier)
+as `ayax79/tmux_agent_notifier`. CI also pushes builds to FlakeHub Cache; Nix
+uses them if you are logged in to FlakeHub (`determinate-nixd login` or
+`fh login`), and otherwise builds `tan` from source.
+
+Install it into your profile:
+
+```sh
+nix profile install "https://flakehub.com/f/ayax79/tmux_agent_notifier/0.1"
+tan install            # or: tan install claude goose
+```
+
+#### home-manager
+
+Add the input with [`fh`](https://github.com/DeterminateSystems/fh):
+
+```sh
+fh add ayax79/tmux_agent_notifier
+```
+
+or by hand, then enable the module:
 
 ```nix
 # flake inputs
-tmux-agent-notifier = {
-  url = "path:/Users/awri10/nikedev/ayax79/tmux_agent_notifier"; # or a git URL
-  inputs.nixpkgs.follows = "nixpkgs";
-};
+tmux_agent_notifier.url = "https://flakehub.com/f/ayax79/tmux_agent_notifier/0.1";
 
 # a home-manager module
 { inputs, ... }: {
-  imports = [ inputs.tmux-agent-notifier.homeManagerModules.default ];
+  imports = [ inputs.tmux_agent_notifier.homeManagerModules.default ];
   programs.tmux-agent-notifier = {
     enable = true;
     # agents.goose.enable = false;
@@ -43,19 +67,30 @@ tmux-agent-notifier = {
 }
 ```
 
+Leave out `inputs.nixpkgs.follows`: overriding the flake's nixpkgs changes the
+derivation, so the cached build no longer matches and `tan` is built locally.
+
 Activation runs `tan install`, which merges hook entries into
 `~/.claude/settings.json` and `~/.cursor/hooks.json` (other hooks are kept) and
 writes a Goose plugin to `~/.agents/plugins/tmux-agent-notifier/`. Disabling an
 agent removes its hooks.
 
-## Install (manual)
+### Cargo
+
+Requires Rust 1.85 or newer.
 
 ```sh
+cargo install --git https://github.com/ayax79/tmux_agent_notifier
+# or, from a checkout:
 cargo install --path .
+
 tan install            # or: tan install claude goose
 ```
 
-Then add to `tmux.conf`:
+## tmux configuration
+
+The home-manager module adds this when `programs.tmux` is enabled; otherwise add
+to `tmux.conf`:
 
 ```tmux
 set -g focus-events on
