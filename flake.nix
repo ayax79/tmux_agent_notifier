@@ -42,6 +42,49 @@
         };
       });
 
+      checks = forAllSystems (
+        pkgs:
+        let
+          src = pkgs.lib.cleanSource ./.;
+          package = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+          runCheck =
+            name: packages: script:
+            pkgs.runCommand "tan-${name}" { nativeBuildInputs = packages; } ''
+              cd ${src}
+              ${script}
+              touch $out
+            '';
+        in
+        {
+          inherit package;
+
+          rustfmt = runCheck "rustfmt" [
+            pkgs.cargo
+            pkgs.rustfmt
+          ] "cargo fmt --check";
+
+          nixfmt = runCheck "nixfmt" [
+            pkgs.nixfmt-rfc-style
+            pkgs.findutils
+          ] "find . -name '*.nix' -exec nixfmt --check {} +";
+
+          typos = runCheck "typos" [ pkgs.typos ] "typos";
+
+          clippy = package.overrideAttrs (old: {
+            pname = "${old.pname}-clippy";
+            nativeBuildInputs = old.nativeBuildInputs ++ [ pkgs.clippy ];
+            buildPhase = ''
+              runHook preBuild
+              cargo clippy --offline --all-targets -- -D warnings
+              runHook postBuild
+            '';
+            doCheck = false;
+            installPhase = "touch $out";
+            dontFixup = true;
+          });
+        }
+      );
+
       formatter = forAllSystems (pkgs: pkgs.nixfmt-rfc-style);
     };
 }
